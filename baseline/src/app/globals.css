@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+/*
+ * Placeholder theme tokens only. Per the frontend-design skill, a real
+ * palette/type system should be derived from a concrete brief (subject,
+ * audience, the page's job) — none of that is confirmed yet for this
+ * project (see the naming/scope question raised alongside this scaffold).
+ * These are functional neutrals so the app compiles and is legible, not a
+ * design decision.
+ */
+@theme {
+  --color-background: #ffffff;
+  --color-foreground: #111111;
+  --color-border: #e5e5e5;
+  --color-muted: #737373;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+}

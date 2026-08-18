@@ -1,0 +1,103 @@
+# ─── Dependencies ────────────────────────────────────────────────
+node_modules/
+.pnp
+.pnp.js
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# ─── Package manager locks (keep only what you use) ──────────────
+# Uncommit the ones you don't use to avoid confusion
+bun.lockb
+.bun/
+
+# ─── Next.js ─────────────────────────────────────────────────────
+.next/
+out/
+next-env.d.ts
+
+# ─── Build output ────────────────────────────────────────────────
+.output/
+.vinxi/
+dist/
+build/
+
+# ─── Environment variables ───────────────────────────────────────
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+.env.staging
+.env.*.local
+
+# ─── Vercel ──────────────────────────────────────────────────────
+.vercel
+
+# ─── Logs ────────────────────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+bun-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ─── Runtime data ────────────────────────────────────────────────
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# ─── OS ──────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ─── IDE / Editor ────────────────────────────────────────────────
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+*.swo
+*.sublime-workspace
+*.sublime-project
+
+# ─── TypeScript ──────────────────────────────────────────────────
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# ─── Tailwind / PostCSS cache ────────────────────────────────────
+.tailwind-cache/
+
+# ─── Testing ─────────────────────────────────────────────────────
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# ─── Turbopack / Turborepo ───────────────────────────────────────
+.turbo/
+
+# ─── Cache / Temp ────────────────────────────────────────────────
+.cache/
+.temp/
+.tmp/
+*.local
+
+# ─── Sentry ──────────────────────────────────────────────────────
+.sentryclirc

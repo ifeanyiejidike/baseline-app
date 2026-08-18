@@ -1,0 +1,269 @@
+# =============================================================================
+# MONOREPO — Next.js + Django
+# =============================================================================
+
+
+# =============================================================================
+# ENVIRONMENT & SECRETS
+# =============================================================================
+
+# Environment files
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Local configuration / secrets
+local_settings.py
+settings_local.py
+secrets.json
+
+# Certificates / private keys
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+
+# =============================================================================
+# NODE.JS / NEXT.JS
+# =============================================================================
+
+# Dependencies
+node_modules/
+
+# Yarn
+.pnp
+.pnp.js
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# Bun
+.bun/
+bun.lockb
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+
+# Other frontend build output
+dist/
+build/
+.output/
+.vinxi/
+
+# Turborepo / Turbopack
+.turbo/
+
+# TypeScript
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# Tailwind / PostCSS cache
+.tailwind-cache/
+
+# Vercel
+.vercel/
+
+
+# =============================================================================
+# PYTHON / DJANGO
+# =============================================================================
+
+# Python bytecode / caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.python-version
+
+# Python packaging
+*.egg
+*.egg-info/
+.eggs/
+build/
+dist/
+wheels/
+pip-wheel-metadata/
+MANIFEST
+
+# Django
+db.sqlite3
+db.sqlite3-journal
+db.sqlite3-wal
+db.sqlite3-shm
+db.pre_restore_*.sqlite3
+
+# Django generated files
+/staticfiles/
+/static_root/
+/media/
+
+
+# =============================================================================
+# PYTHON TESTING / TYPE CHECKING / LINTING
+# =============================================================================
+
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+*.cover
+
+.tox/
+.nox/
+
+.hypothesis/
+
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+.pyright/
+.ruff_cache/
+
+
+# =============================================================================
+# DJANGO / CELERY / REDIS RUNTIME
+# =============================================================================
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Redis
+dump.rdb
+
+# Jupyter
+.ipynb_checkpoints/
+
+
+# =============================================================================
+# LOGS / RUNTIME DATA / BACKUPS
+# =============================================================================
+
+logs/
+*.log
+*.log.*
+
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+backups/
+
+
+# =============================================================================
+# TESTING — FRONTEND
+# =============================================================================
+
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+
+# =============================================================================
+# CACHE / TEMPORARY FILES
+# =============================================================================
+
+.cache/
+.temp/
+.tmp/
+*.local
+
+# Backup / temporary files
+*.bak
+*.orig
+*.tmp
+*.temp
+
+
+# =============================================================================
+# SENTRY
+# =============================================================================
+
+.sentryclirc
+
+
+# =============================================================================
+# IDE / EDITOR
+# =============================================================================
+
+# VS Code
+.vscode/*
+!.vscode/extensions.json
+
+# JetBrains
+.idea/
+
+# Visual Studio
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Sublime
+*.sublime-workspace
+*.sublime-project
+
+# Vim / editor swap files
+*.swp
+*.swo
+*~
+
+# Python IDEs
+.project
+.pydevproject
+.spyderproject
+.spyproject
+.ropeproject
+
+
+# =============================================================================
+# OPERATING SYSTEM
+# =============================================================================
+
+.DS_Store
+.DS_Store?
+.AppleDouble
+.LSOverride
+._*
+
+.Spotlight-V100
+.Trashes
+
+Thumbs.db
+thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+
+# =============================================================================
+# DOCKER
+# =============================================================================
+
+docker-compose.override.yml
+.dockerignore.local
+
+
+# =============================================================================
+# OTHERS
+# =============================================================================
+claude-chat.txt

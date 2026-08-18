@@ -1,0 +1,655 @@
+### =========================================================================
+### Baseline API — requests.http
+### =========================================================================
+### Works with the VS Code "REST Client" extension or JetBrains' built-in
+### HTTP Client. Requests are grouped and ordered to form a realistic
+### end-to-end flow — run top to bottom the first time so variables like
+### {{accessToken}} get populated from real responses along the way.
+###
+### KNOWN GAP — READ FIRST:
+### There is currently no public endpoint to create an Organization. The
+### only way to get a first Organization + Owner Membership into the
+### database today is via the Django admin or a shell command:
+###
+###   python manage.py createsuperuser
+###   python manage.py shell -c "
+###     from apps.core.models import Organization, Membership
+###     from apps.accounts.models import User
+###     org = Organization.objects.create(name='Acme Inc', slug='acme-inc')
+###     user = User.objects.get(email='you@example.com')
+###     Membership.objects.create(organization=org, user=user, role='owner', status='active')
+###     print(org.id)
+###   "
+###
+### Paste that org id into @orgId below. This file assumes that setup step
+### has already been done. If you'd like a real POST /organizations/
+### endpoint instead, ask — it wasn't in the confirmed MVP scope.
+### =========================================================================
+
+@baseUrl = http://localhost:8000
+@apiV1 = {{baseUrl}}/api/v1
+
+### Fill in after step 1 (register) + step 2 (login) run once.
+@accessToken =
+@refreshToken =
+
+### Fill in using the setup step above (or after creating one via admin).
+@orgId =
+
+### Populated automatically as you run requests further down — copy the
+### `id` from each response into the matching variable.
+@customerId =
+@leadId =
+@projectId =
+@taskId =
+@invoiceId =
+@documentId =
+@notificationId =
+@invitationToken =
+@membershipId =
+
+
+### =========================================================================
+### HEALTH CHECK (no auth)
+### =========================================================================
+
+### Health check
+GET {{baseUrl}}/health/
+
+
+### =========================================================================
+### AUTH — apps/accounts (prefix: /api/v1/auth/)
+### No X-Organization-Id header on any of these — auth happens before a
+### tenant workspace is selected.
+### =========================================================================
+
+### Register a new user
+# @name register
+POST {{apiV1}}/auth/register/
+Content-Type: application/json
+
+{
+  "email": "owner@acme.test",
+  "password": "a-very-secure-password-123",
+  "first_name": "Ada",
+  "last_name": "Owner"
+}
+
+### Log in — copy `access` into @accessToken and `refresh` into @refreshToken above
+# @name login
+POST {{apiV1}}/auth/login/
+Content-Type: application/json
+
+{
+  "email": "owner@acme.test",
+  "password": "a-very-secure-password-123"
+}
+
+### Refresh the access token
+# @name refreshToken
+POST {{apiV1}}/auth/token/refresh/
+Content-Type: application/json
+
+{
+  "refresh": "{{refreshToken}}"
+}
+
+### Current user profile
+GET {{apiV1}}/auth/me/
+Authorization: Bearer {{accessToken}}
+
+### Log out (blacklists the refresh token)
+POST {{apiV1}}/auth/logout/
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "refresh": "{{refreshToken}}"
+}
+
+
+### =========================================================================
+### CORE — memberships, invitations (prefix: /api/v1/)
+### Every request below this point needs BOTH headers unless noted:
+###   Authorization: Bearer <token>
+###   X-Organization-Id: <org uuid>  (re-validated against a live Membership
+###                                   on every request — see
+###                                   TenantContextMiddleware)
+### =========================================================================
+
+### List memberships in the active org
+GET {{apiV1}}/memberships/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+### Retrieve one membership
+GET {{apiV1}}/memberships/{{membershipId}}/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+### Create an invitation (requires invitations:create — Owner/Admin)
+# @name createInvitation
+POST {{apiV1}}/invitations/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+Content-Type: application/json
+
+{
+  "email": "newmember@acme.test",
+  "role": "member"
+}
+
+### List invitations
+GET {{apiV1}}/invitations/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+### Revoke an invitation (requires invitations:revoke)
+DELETE {{apiV1}}/invitations/{{invitationToken}}/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+### Accept an invitation — NO X-Organization-Id (no membership exists yet).
+### The invited user must be logged in as themselves first (register/login
+### with the invited email), then call this with the token from the
+### invitation email / createInvitation response.
+POST {{apiV1}}/invitations/accept/
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "token": "{{invitationToken}}"
+}
+
+
+### =========================================================================
+### CUSTOMERS — apps/customers (prefix: /api/v1/)
+### =========================================================================
+
+### List customers
+GET {{apiV1}}/customers/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+### List customers — filtered + searched
+GET {{apiV1}}/customers/?is_archived=false&search=acme
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+### Create a customer (requires customers:create)
+# @name createCustomer
+POST {{apiV1}}/customers/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+Content-Type: application/json
+
+{
+  "name": "Acme Retail Ltd",
+  "primary_contact_name": "Chidi Okafor",
+  "email": "chidi@acmeretail.test",
+  "phone": "+2348012345678",
+  "billing_address": "12 Marina Road, Lagos",
+  "data_source": "direct"
+}
+
+### Create a customer sourced from an imported list — consent_obtained_at required
+POST {{apiV1}}/customers/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+Content-Type: application/json
+
+{
+  "name": "Imported Prospect Co",
+  "email": "prospect@example.test",
+  "data_source": "imported",
+  "consent_obtained_at": "2026-08-01T10:00:00Z"
+}
+
+### Retrieve a customer
+GET {{apiV1}}/customers/{{customerId}}/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+### Update a customer (requires customers:update)
+PATCH {{apiV1}}/customers/{{customerId}}/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+Content-Type: application/json
+
+{
+  "phone": "+2348099999999"
+}
+
+### Archive a customer (ordinary workflow, not NDPA erasure)
+PATCH {{apiV1}}/customers/{{customerId}}/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+Content-Type: application/json
+
+{
+  "is_archived": true
+}
+
+### Delete a customer (requires customers:delete — real hard-delete, no invoices attached)
+DELETE {{apiV1}}/customers/{{customerId}}/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+
+### =========================================================================
+### LEADS — apps/leads (prefix: /api/v1/)
+### =========================================================================
+
+### List leads
+GET {{apiV1}}/leads/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+### List leads — filtered by status
+GET {{apiV1}}/leads/?status=new
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+### Create a lead (requires leads:create)
+# @name createLead
+POST {{apiV1}}/leads/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+Content-Type: application/json
+
+{
+  "name": "Ngozi Balogun",
+  "company_name": "Balogun Textiles",
+  "email": "ngozi@balogun-textiles.test",
+  "phone": "+2347011122233",
+  "data_source": "inbound"
+}
+
+### Retrieve a lead
+GET {{apiV1}}/leads/{{leadId}}/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+### Update a lead's status (requires leads:update)
+PATCH {{apiV1}}/leads/{{leadId}}/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+Content-Type: application/json
+
+{
+  "status": "qualified"
+}
+
+### Convert a lead — creates a new Customer (requires leads:convert)
+POST {{apiV1}}/leads/{{leadId}}/convert/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+Content-Type: application/json
+
+{}
+
+### Convert a lead — link to an EXISTING customer instead (upsell/expansion case)
+POST {{apiV1}}/leads/{{leadId}}/convert/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+Content-Type: application/json
+
+{
+  "customer_id": "{{customerId}}"
+}
+
+### Delete a lead (requires leads:delete)
+DELETE {{apiV1}}/leads/{{leadId}}/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+
+### =========================================================================
+### PROJECTS & TASKS — apps/projects (prefix: /api/v1/)
+### =========================================================================
+
+### List projects
+GET {{apiV1}}/projects/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+### List projects — filtered by status/customer
+GET {{apiV1}}/projects/?status=active&customer={{customerId}}
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+### Create a client project (requires projects:create — also entitlement-checked)
+# @name createProject
+POST {{apiV1}}/projects/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+Content-Type: application/json
+
+{
+  "name": "Acme Website Redesign",
+  "description": "Full redesign + CMS migration",
+  "status": "planning",
+  "customer": "{{customerId}}",
+  "start_date": "2026-09-01",
+  "due_date": "2026-11-30"
+}
+
+### Create an INTERNAL project — no customer (confirmed: Project.customer is optional)
+POST {{apiV1}}/projects/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+Content-Type: application/json
+
+{
+  "name": "Internal: Q3 Hiring Plan",
+  "status": "planning"
+}
+
+### Retrieve a project (detail view includes nested tasks)
+GET {{apiV1}}/projects/{{projectId}}/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+### Update a project (requires projects:update)
+PATCH {{apiV1}}/projects/{{projectId}}/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+Content-Type: application/json
+
+{
+  "status": "active"
+}
+
+### Delete a project (requires projects:delete)
+DELETE {{apiV1}}/projects/{{projectId}}/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+### ---- Tasks ----
+
+### List tasks
+GET {{apiV1}}/tasks/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+### List tasks — filtered by project/assignee/status
+GET {{apiV1}}/tasks/?project={{projectId}}&status=todo
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+### Create a task inside a project (requires tasks:create)
+# @name createTask
+POST {{apiV1}}/tasks/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+Content-Type: application/json
+
+{
+  "project": "{{projectId}}",
+  "title": "Design homepage wireframes",
+  "description": "Low-fidelity wireframes for review",
+  "priority": "high",
+  "due_date": "2026-09-10"
+}
+
+### Create a STANDALONE task — no project (confirmed: Task.project is optional)
+POST {{apiV1}}/tasks/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+Content-Type: application/json
+
+{
+  "title": "Personal reminder: renew domain",
+  "priority": "low"
+}
+
+### Retrieve a task
+GET {{apiV1}}/tasks/{{taskId}}/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+### Assign a task — fires a TASK_ASSIGNED notification to the assignee
+PATCH {{apiV1}}/tasks/{{taskId}}/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+Content-Type: application/json
+
+{
+  "assigned_to": "{{membershipId}}",
+  "status": "in_progress"
+}
+
+### Delete a task (requires tasks:delete)
+DELETE {{apiV1}}/tasks/{{taskId}}/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+
+### =========================================================================
+### INVOICES — apps/invoices (prefix: /api/v1/)
+### DELETE is intentionally disabled (405) — invoices are financial
+### records; use the void action instead.
+### =========================================================================
+
+### List invoices
+GET {{apiV1}}/invoices/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+### List invoices — filtered by status
+GET {{apiV1}}/invoices/?status=sent
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+### Create an invoice (requires invoices:create — customer is REQUIRED)
+# @name createInvoice
+POST {{apiV1}}/invoices/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+Content-Type: application/json
+
+{
+  "customer": "{{customerId}}",
+  "project": "{{projectId}}",
+  "currency": "NGN",
+  "subtotal": "500000.00",
+  "tax_amount": "37500.00",
+  "issued_at": "2026-08-18",
+  "due_date": "2026-09-01",
+  "notes": "50% deposit for website redesign"
+}
+
+### Retrieve an invoice
+GET {{apiV1}}/invoices/{{invoiceId}}/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+### Update an invoice (requires invoices:update)
+PATCH {{apiV1}}/invoices/{{invoiceId}}/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+Content-Type: application/json
+
+{
+  "status": "sent"
+}
+
+### Mark an invoice paid
+POST {{apiV1}}/invoices/{{invoiceId}}/mark_paid/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+### Void an invoice (requires invoices:void)
+POST {{apiV1}}/invoices/{{invoiceId}}/void/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+### Attempt delete — expect 405 Method Not Allowed by design
+DELETE {{apiV1}}/invoices/{{invoiceId}}/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+
+### =========================================================================
+### DOCUMENTS — apps/documents (prefix: /api/v1/)
+### Upload is multipart/form-data, not JSON — exactly one of
+### customer/project/invoice must be set (DB-enforced).
+### =========================================================================
+
+### List documents
+GET {{apiV1}}/documents/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+### List documents — filtered by owner
+GET {{apiV1}}/documents/?customer={{customerId}}
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+### Upload a document attached to a customer (requires documents:create)
+### REST Client: point `< ./sample.pdf` at a real local file before running.
+POST {{apiV1}}/documents/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+Content-Type: multipart/form-data; boundary=BaselineBoundary
+
+--BaselineBoundary
+Content-Disposition: form-data; name="customer"
+
+{{customerId}}
+--BaselineBoundary
+Content-Disposition: form-data; name="description"
+
+Signed contract
+--BaselineBoundary
+Content-Disposition: form-data; name="file"; filename="sample.pdf"
+Content-Type: application/pdf
+
+< ./sample.pdf
+--BaselineBoundary--
+
+### Retrieve a document
+GET {{apiV1}}/documents/{{documentId}}/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+### Delete a document (requires documents:delete — also removes the underlying file)
+DELETE {{apiV1}}/documents/{{documentId}}/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+
+### =========================================================================
+### NOTIFICATIONS — apps/notifications (prefix: /api/v1/)
+### Always scoped to the CALLER's own notifications (recipient=request.user)
+### regardless of role — no RBAC gate beyond being authenticated.
+### =========================================================================
+
+### List my notifications
+GET {{apiV1}}/notifications/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+### List unread only
+GET {{apiV1}}/notifications/?is_read=false
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+### Unread count
+GET {{apiV1}}/notifications/unread_count/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+### Retrieve a notification
+GET {{apiV1}}/notifications/{{notificationId}}/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+### Mark one notification read
+POST {{apiV1}}/notifications/{{notificationId}}/mark_read/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+### Mark all read
+POST {{apiV1}}/notifications/mark_all_read/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+
+### =========================================================================
+### ANALYTICS — apps/analytics (prefix: /api/v1/)
+### Requires analytics:view (Owner/Admin/Manager, per the seeded RBAC grants)
+### =========================================================================
+
+### Dashboard summary — leads, customers, projects, tasks, revenue
+GET {{apiV1}}/analytics/dashboard/
+Authorization: Bearer {{accessToken}}
+X-Organization-Id: {{orgId}}
+
+
+### =========================================================================
+### BILLING — apps/billing (prefix: /api/v1/billing/)
+### Webhooks authenticate via HMAC signature, NOT Bearer/X-Organization-Id —
+### these are provider-to-server calls, not requests you'd normally send by
+### hand. Included for completeness / local signature-verification testing.
+### Signature values below are placeholders and WILL fail verification
+### unless you compute a real HMAC against your PAYSTACK_WEBHOOK_SECRET /
+### OPAY_WEBHOOK_SECRET.
+### =========================================================================
+
+### Paystack webhook (charge.success)
+POST {{apiV1}}/billing/webhooks/paystack/
+Content-Type: application/json
+X-Paystack-Signature: REPLACE_WITH_REAL_HMAC_SHA512_SIGNATURE
+
+{
+  "event": "charge.success",
+  "data": {
+    "id": "evt_test_001",
+    "reference": "ref_test_001",
+    "metadata": {
+      "organization_id": "{{orgId}}",
+      "plan_code": "trial"
+    }
+  }
+}
+
+### Opay webhook (TRANSACTION.SUCCESS)
+POST {{apiV1}}/billing/webhooks/opay/
+Content-Type: application/json
+Signature: REPLACE_WITH_REAL_HMAC_SHA256_SIGNATURE
+
+{
+  "type": "TRANSACTION.SUCCESS",
+  "data": {
+    "orderNo": "order_test_001",
+    "metadata": {
+      "organization_id": "{{orgId}}",
+      "plan_code": "trial"
+    }
+  }
+}
+
+
+### =========================================================================
+### PLATFORM ADMIN — apps/platform_admin (prefix: /api/v1/platform-admin/)
+### Requires request.user.is_staff = True — NOT gated by tenant Membership
+### role. No X-Organization-Id needed (these views query cross-tenant via
+### .unscoped() explicitly). Log in as a superuser/staff account first.
+### =========================================================================
+
+### Search organizations
+GET {{apiV1}}/platform-admin/organizations/?q=acme
+Authorization: Bearer {{accessToken}}
+
+### Organization detail (includes active member count)
+GET {{apiV1}}/platform-admin/organizations/{{orgId}}/
+Authorization: Bearer {{accessToken}}
+
+### Suspend an organization — hard kill-switch, checked on every tenant request
+POST {{apiV1}}/platform-admin/organizations/{{orgId}}/suspend/
+Authorization: Bearer {{accessToken}}
+
+### Unsuspend an organization
+POST {{apiV1}}/platform-admin/organizations/{{orgId}}/unsuspend/
+Authorization: Bearer {{accessToken}}
