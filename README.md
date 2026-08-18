@@ -137,4 +137,6 @@ routing-only scaffold; add them alongside real pages.
 
 ## License
 
-Not yet decided — add before making this repository public.
+This project is source-available for personal, educational, and non-commercial use only.
+
+Commercial use, redistribution as part of a commercial product or service, or use for commercial advantage requires prior written permission from the copyright holder.
